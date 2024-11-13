@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     markdownInput.addEventListener('input', debounce(() => {
         updatePreview(markdownInput.value);
-        updateWordAndCharCount(); // Add this line
+        updateWordAndCharCount();
     }, 300));
 
     // Initialize counts
@@ -93,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add input listener for live preview
     markdownInput.addEventListener('input', debounce((e) => {
         updatePreview(e.target.value);
+        updateWordAndCharCount();
     }, 300));
 
     // Initialize preview
@@ -169,23 +170,20 @@ function insertMarkdown(prefix, suffix = '') {
     const text = textarea.value;
     const selectedText = text.substring(start, end);
 
-    // Handle different cases (selection vs. no selection)
     if (start === end) {
-        // No selection - insert placeholder
         const placeholder = getPlaceholderForMarkdown(prefix);
         const newText = text.substring(0, start) + prefix + placeholder + suffix + text.substring(end);
         textarea.value = newText;
         const cursorPosition = start + prefix.length;
         textarea.setSelectionRange(cursorPosition, cursorPosition + placeholder.length);
     } else {
-        // Text is selected - wrap it
         const newText = text.substring(0, start) + prefix + selectedText + suffix + text.substring(end);
         textarea.value = newText;
         textarea.setSelectionRange(start + prefix.length, end + prefix.length);
     }
 
-    // Update preview
     updatePreview(textarea.value);
+    updateWordAndCharCount();
     textarea.focus();
 }
 
@@ -209,7 +207,18 @@ function updatePreview(markdown) {
     lastProcessedMarkdown = markdown;
     const output = document.getElementById('output');
     const html = converter.makeHtml(markdown);
-    output.innerHTML = sanitizedHtml;
+    output.innerHTML = html;
+}
+
+// Word and character count functionality
+function updateWordAndCharCount() {
+    const text = document.getElementById('markdown-input').value;
+
+    const charCount = text.length;
+    const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+
+    document.getElementById('word-count').textContent = wordCount;
+    document.getElementById('char-count').textContent = charCount;
 }
 
 // Notification system
@@ -219,7 +228,6 @@ function showNotification(message, type = 'success') {
     notification.textContent = message;
     document.body.appendChild(notification);
 
-    // Remove notification after delay
     setTimeout(() => {
         notification.style.animation = 'slideIn 0.3s ease-out reverse';
         setTimeout(() => notification.remove(), 300);
