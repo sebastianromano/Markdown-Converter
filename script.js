@@ -420,31 +420,49 @@ async function convertToOdt(markdown, filename) {
                            xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
                            xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0">
         <office:styles>
-            <style:style style:name="Standard" style:family="paragraph" style:class="text"/>
+            <style:style style:name="Standard" style:family="paragraph" style:class="text">
+                <style:paragraph-properties fo:margin-top="0.247cm" fo:margin-bottom="0.247cm"/>
+            </style:style>
             <style:style style:name="Heading" style:family="paragraph" style:parent-style-name="Standard">
+                <style:paragraph-properties fo:margin-top="0.423cm" fo:margin-bottom="0.212cm"/>
                 <style:text-properties fo:font-weight="bold"/>
             </style:style>
             <style:style style:name="Heading_1" style:family="paragraph" style:parent-style-name="Heading">
+                <style:paragraph-properties fo:margin-top="0.847cm" fo:margin-bottom="0.423cm"/>
                 <style:text-properties fo:font-size="18pt"/>
             </style:style>
             <style:style style:name="Heading_2" style:family="paragraph" style:parent-style-name="Heading">
+                <style:paragraph-properties fo:margin-top="0.635cm" fo:margin-bottom="0.318cm"/>
                 <style:text-properties fo:font-size="16pt"/>
             </style:style>
             <style:style style:name="Heading_3" style:family="paragraph" style:parent-style-name="Heading">
+                <style:paragraph-properties fo:margin-top="0.423cm" fo:margin-bottom="0.212cm"/>
                 <style:text-properties fo:font-size="14pt"/>
             </style:style>
             <style:style style:name="List_1" style:family="paragraph" style:parent-style-name="Standard">
-                <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="0cm" fo:text-indent="-0.5cm"/>
+                <style:paragraph-properties fo:margin-left="1.27cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
+            </style:style>
+            <style:style style:name="List_2" style:family="paragraph" style:parent-style-name="Standard">
+                <style:paragraph-properties fo:margin-left="2.54cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
+            </style:style>
+            <style:style style:name="List_3" style:family="paragraph" style:parent-style-name="Standard">
+                <style:paragraph-properties fo:margin-left="3.81cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
             </style:style>
             <style:style style:name="Numbering_1" style:family="paragraph" style:parent-style-name="Standard">
-                <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="0cm" fo:text-indent="-0.5cm"/>
+                <style:paragraph-properties fo:margin-left="1.27cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
+            </style:style>
+            <style:style style:name="Numbering_2" style:family="paragraph" style:parent-style-name="Standard">
+                <style:paragraph-properties fo:margin-left="2.54cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
+            </style:style>
+            <style:style style:name="Numbering_3" style:family="paragraph" style:parent-style-name="Standard">
+                <style:paragraph-properties fo:margin-left="3.81cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
             </style:style>
             <style:style style:name="Source_Text" style:family="text">
-                <style:text-properties style:font-name="Courier New"/>
+                <style:text-properties style:font-name="Courier New" fo:background-color="#F8F9FA"/>
             </style:style>
             <style:style style:name="Preformatted_Text" style:family="paragraph">
-                <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="1cm"/>
-                <style:text-properties style:font-name="Courier New"/>
+                <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="1cm" fo:margin-top="0.247cm" fo:margin-bottom="0.247cm"/>
+                <style:text-properties style:font-name="Courier New" fo:background-color="#F8F9FA"/>
             </style:style>
             <style:style style:name="Monospace" style:family="text">
                 <style:text-properties style:font-name="Courier New"/>
@@ -457,7 +475,7 @@ async function convertToOdt(markdown, filename) {
             </style:style>
         </office:styles>
     </office:document-styles>`;
-
+    
     zip.file('styles.xml', styles);
 
     // Convert HTML to ODT content
@@ -494,22 +512,26 @@ function convertHtmlToOdt(html) {
 
     function processNode(node, level = 0) {
         if (node.nodeType === Node.TEXT_NODE) {
-            return node.textContent ?
-                `<text:span>${escapeXml(node.textContent)}</text:span>` : '';
+            // Only wrap non-empty text in text:span
+            return node.textContent.trim() ?
+                `<text:span>${escapeXml(node.textContent)}</text:span>` :
+                escapeXml(node.textContent);
         }
 
         if (node.nodeType === Node.ELEMENT_NODE) {
-            const content = Array.from(node.childNodes).map(n => processNode(n, level)).join('');
+            const content = Array.from(node.childNodes)
+                .map(n => processNode(n, level))
+                .join('');
 
             switch (node.tagName.toLowerCase()) {
                 case 'h1':
-                    return `<text:h text:style-name="Heading_1" text:outline-level="1">${content}</text:h>`;
+                    return `<text:h text:style-name="Heading_1" text:outline-level="1">${content}</text:h>\n`;
                 case 'h2':
-                    return `<text:h text:style-name="Heading_2" text:outline-level="2">${content}</text:h>`;
+                    return `<text:h text:style-name="Heading_2" text:outline-level="2">${content}</text:h>\n`;
                 case 'h3':
-                    return `<text:h text:style-name="Heading_3" text:outline-level="3">${content}</text:h>`;
+                    return `<text:h text:style-name="Heading_3" text:outline-level="3">${content}</text:h>\n`;
                 case 'p':
-                    return `<text:p text:style-name="Standard">${content}</text:p>`;
+                    return `<text:p text:style-name="Standard">${content}</text:p>\n`;
                 case 'strong':
                 case 'b':
                     return `<text:span text:style-name="Bold">${content}</text:span>`;
@@ -518,16 +540,16 @@ function convertHtmlToOdt(html) {
                     return `<text:span text:style-name="Italic">${content}</text:span>`;
                 case 'ul':
                     listLevel++;
-                    const ulContent = `<text:list text:style-name="List_1" text:continue-numbering="false">
-                        ${Array.from(node.children).map(li => processNode(li, listLevel)).join('')}
-                    </text:list>`;
+                    const ulContent = `<text:list text:style-name="List_${listLevel}">
+                        ${Array.from(node.children).map(li => processNode(li, level + 1)).join('')}
+                    </text:list>\n`;
                     listLevel--;
                     return ulContent;
                 case 'ol':
                     listLevel++;
-                    const olContent = `<text:list text:style-name="Numbering_1" text:continue-numbering="false">
-                        ${Array.from(node.children).map(li => processNode(li, listLevel)).join('')}
-                    </text:list>`;
+                    const olContent = `<text:list text:style-name="Numbering_${listLevel}">
+                        ${Array.from(node.children).map(li => processNode(li, level + 1)).join('')}
+                    </text:list>\n`;
                     listLevel--;
                     return olContent;
                 case 'li':
@@ -537,7 +559,9 @@ function convertHtmlToOdt(html) {
                 case 'code':
                     return `<text:span text:style-name="Source_Text">${escapeXml(node.textContent)}</text:span>`;
                 case 'pre':
-                    return `<text:p text:style-name="Preformatted_Text">${escapeXml(node.textContent)}</text:p>`;
+                    return `<text:p text:style-name="Preformatted_Text">${escapeXml(node.textContent)}</text:p>\n`;
+                case 'br':
+                    return '\n';
                 default:
                     return content;
             }
