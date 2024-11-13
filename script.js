@@ -420,6 +420,7 @@ async function convertToOdt(markdown, filename) {
                            xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
                            xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0">
         <office:styles>
+            <!-- Previous styles remain the same -->
             <style:style style:name="Standard" style:family="paragraph" style:class="text">
                 <style:paragraph-properties fo:margin-top="0.247cm" fo:margin-bottom="0.247cm"/>
             </style:style>
@@ -439,33 +440,42 @@ async function convertToOdt(markdown, filename) {
                 <style:paragraph-properties fo:margin-top="0.423cm" fo:margin-bottom="0.212cm"/>
                 <style:text-properties fo:font-size="14pt"/>
             </style:style>
-            <style:style style:name="List_1" style:family="paragraph" style:parent-style-name="Standard">
-                <style:paragraph-properties fo:margin-left="1.27cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
-            </style:style>
-            <style:style style:name="List_2" style:family="paragraph" style:parent-style-name="Standard">
-                <style:paragraph-properties fo:margin-left="2.54cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
-            </style:style>
-            <style:style style:name="List_3" style:family="paragraph" style:parent-style-name="Standard">
-                <style:paragraph-properties fo:margin-left="3.81cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
-            </style:style>
-            <style:style style:name="Numbering_1" style:family="paragraph" style:parent-style-name="Standard">
-                <style:paragraph-properties fo:margin-left="1.27cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
-            </style:style>
-            <style:style style:name="Numbering_2" style:family="paragraph" style:parent-style-name="Standard">
-                <style:paragraph-properties fo:margin-left="2.54cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
-            </style:style>
-            <style:style style:name="Numbering_3" style:family="paragraph" style:parent-style-name="Standard">
-                <style:paragraph-properties fo:margin-left="3.81cm" fo:margin-right="0cm" fo:text-indent="-0.635cm"/>
-            </style:style>
+
+            <!-- List styles -->
+            <text:list-style style:name="BulletList">
+                <text:list-level-style-bullet text:level="1" text:style-name="Bullet_20_Symbols" style:num-suffix="." text:bullet-char="•">
+                    <style:list-level-properties text:space-before="0.25in" text:min-label-width="0.25in"/>
+                    <style:text-properties style:font-name="OpenSymbol"/>
+                </text:list-level-style-bullet>
+                <text:list-level-style-bullet text:level="2" text:style-name="Bullet_20_Symbols" style:num-suffix="." text:bullet-char="◦">
+                    <style:list-level-properties text:space-before="0.5in" text:min-label-width="0.25in"/>
+                    <style:text-properties style:font-name="OpenSymbol"/>
+                </text:list-level-style-bullet>
+                <text:list-level-style-bullet text:level="3" text:style-name="Bullet_20_Symbols" style:num-suffix="." text:bullet-char="▪">
+                    <style:list-level-properties text:space-before="0.75in" text:min-label-width="0.25in"/>
+                    <style:text-properties style:font-name="OpenSymbol"/>
+                </text:list-level-style-bullet>
+            </text:list-style>
+
+            <text:list-style style:name="NumberedList">
+                <text:list-level-style-number text:level="1" text:style-name="Numbering_20_Symbols" style:num-suffix="." style:num-format="1">
+                    <style:list-level-properties text:space-before="0.25in" text:min-label-width="0.25in"/>
+                </text:list-level-style-number>
+                <text:list-level-style-number text:level="2" text:style-name="Numbering_20_Symbols" style:num-suffix="." style:num-format="a">
+                    <style:list-level-properties text:space-before="0.5in" text:min-label-width="0.25in"/>
+                </text:list-level-style-number>
+                <text:list-level-style-number text:level="3" text:style-name="Numbering_20_Symbols" style:num-suffix="." style:num-format="i">
+                    <style:list-level-properties text:space-before="0.75in" text:min-label-width="0.25in"/>
+                </text:list-level-style-number>
+            </text:list-style>
+
+            <!-- Other styles remain the same -->
             <style:style style:name="Source_Text" style:family="text">
                 <style:text-properties style:font-name="Courier New" fo:background-color="#F8F9FA"/>
             </style:style>
             <style:style style:name="Preformatted_Text" style:family="paragraph">
                 <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="1cm" fo:margin-top="0.247cm" fo:margin-bottom="0.247cm"/>
                 <style:text-properties style:font-name="Courier New" fo:background-color="#F8F9FA"/>
-            </style:style>
-            <style:style style:name="Monospace" style:family="text">
-                <style:text-properties style:font-name="Courier New"/>
             </style:style>
             <style:style style:name="Bold" style:family="text">
                 <style:text-properties fo:font-weight="bold"/>
@@ -475,7 +485,7 @@ async function convertToOdt(markdown, filename) {
             </style:style>
         </office:styles>
     </office:document-styles>`;
-    
+
     zip.file('styles.xml', styles);
 
     // Convert HTML to ODT content
@@ -512,7 +522,6 @@ function convertHtmlToOdt(html) {
 
     function processNode(node, level = 0) {
         if (node.nodeType === Node.TEXT_NODE) {
-            // Only wrap non-empty text in text:span
             return node.textContent.trim() ?
                 `<text:span>${escapeXml(node.textContent)}</text:span>` :
                 escapeXml(node.textContent);
@@ -540,28 +549,26 @@ function convertHtmlToOdt(html) {
                     return `<text:span text:style-name="Italic">${content}</text:span>`;
                 case 'ul':
                     listLevel++;
-                    const ulContent = `<text:list text:style-name="List_${listLevel}">
-                        ${Array.from(node.children).map(li => processNode(li, level + 1)).join('')}
+                    const ulContent = `<text:list text:style-name="BulletList" text:continue-numbering="false">
+                        ${Array.from(node.children).map(li => processNode(li, listLevel)).join('')}
                     </text:list>\n`;
                     listLevel--;
                     return ulContent;
                 case 'ol':
                     listLevel++;
-                    const olContent = `<text:list text:style-name="Numbering_${listLevel}">
-                        ${Array.from(node.children).map(li => processNode(li, level + 1)).join('')}
+                    const olContent = `<text:list text:style-name="NumberedList" text:continue-numbering="false">
+                        ${Array.from(node.children).map(li => processNode(li, listLevel)).join('')}
                     </text:list>\n`;
                     listLevel--;
                     return olContent;
                 case 'li':
                     return `<text:list-item>
-                        <text:p text:style-name="List_${listLevel}">${content}</text:p>
+                        <text:p>${content}</text:p>
                     </text:list-item>`;
                 case 'code':
                     return `<text:span text:style-name="Source_Text">${escapeXml(node.textContent)}</text:span>`;
                 case 'pre':
                     return `<text:p text:style-name="Preformatted_Text">${escapeXml(node.textContent)}</text:p>\n`;
-                case 'br':
-                    return '\n';
                 default:
                     return content;
             }
