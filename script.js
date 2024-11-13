@@ -15,39 +15,39 @@ let lastProcessedMarkdown = '';
 let isProcessing = false;
 
 // Example markdown content
-const exampleMarkdown = `# The Complete Markdown Testing Guide
+const exampleMarkdown = `# The Totally Tubular Markdown Masterclass
 
-## Introduction
-This is a **comprehensive** test document that showcases various *Markdown* features. Feel free to ***combine bold and italic*** formatting.
+## Greetings, Earthlings!
+This is the **most bodacious**, *gnarly* test document that'll show you all the *killer* *Markdown* tricks. Time to **totally shred** some formatting!
 
-## Text Formatting
-Here's a demonstration of different text styles:
-- Regular text
-- **Bold text**
-- *Italic text*
-- \`inline code\`
+## Radical Text Styles
+Check out these **bodacious** text stylings, dude:
+- Tubular regular text
+- **Mega-rad bold text**
+- *Gnarly italic text*
+- \`Awesomely radical inline code\`
 
-## Lists
-### Unordered List
-- First item
+## Mondo Lists
+### Tubular Unordered List
+- First item, bro
 - Second item
-  - Nested item 1
-  - Nested item 2
-- Third item
+  - Bodacious nested item 1
+  - Mondo nested item 2
+- Third item, for sure
 
-### Ordered List
-1. First step
+### Radical Ordered List
+1. First step, righteous
 2. Second step
-   1. Sub-step A
-   2. Sub-step B
-3. Third step
+   1. Sub-step A, for sure
+   2. Sub-step B, gnarly
+3. Third step, totally
 
-## Code
+## Mega-Sick Code
 \`\`\`python
-def hello_world():
-    print("Hello, world!")
+def shred_it():
+    print("Cowabunga, dude!")
 \`\`\`
-[Click for more examples...](https://daringfireball.net/projects/markdown/)`;
+[Click for more gnarly examples...](https://daringfireball.net/projects/markdown/)`;
 
 // Initialize the editor
 document.addEventListener('DOMContentLoaded', () => {
