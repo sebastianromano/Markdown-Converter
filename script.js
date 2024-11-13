@@ -61,6 +61,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    markdownInput.addEventListener('input', debounce(() => {
+        updatePreview(markdownInput.value);
+        updateWordAndCharCount(); // Add this line
+    }, 300));
+
+    // Initialize counts
+    updateWordAndCharCount();
+
     // Add button to copy example text
     const exampleBtn = document.createElement('div');
     exampleBtn.className = 'toolbar-divider';
@@ -68,15 +76,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const copyExampleBtn = document.createElement('button');
     copyExampleBtn.innerHTML = `
-        <svg class="icon" viewBox="0 0 24 24">
-            <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/>
-        </svg>
-    `;
+    <svg class="icon" viewBox="0 0 24 24">
+        <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/>
+    </svg>
+`;
     copyExampleBtn.className = 'tool-btn';
     copyExampleBtn.title = 'Load Example';
     copyExampleBtn.onclick = () => {
         markdownInput.value = exampleMarkdown;
         updatePreview(exampleMarkdown);
+        updateWordAndCharCount(); // Add this line
         showNotification('Example text loaded!');
     };
     toolBar.appendChild(copyExampleBtn);
@@ -85,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     markdownInput.addEventListener('input', debounce((e) => {
         updatePreview(e.target.value);
     }, 300));
-
+    
     // Initialize preview
     updatePreview(markdownInput.value);
 });
@@ -688,4 +697,19 @@ function handleError(error) {
     console.error('Error:', error);
     showNotification(error.message || 'An error occurred', 'error');
     setLoading(false);
+}
+
+function updateWordAndCharCount() {
+    const text = document.getElementById('markdown-input').value;
+
+    // Calculate character count (including spaces)
+    const charCount = text.length;
+
+    // Calculate word count
+    // This regex splits on whitespace and handles various edge cases
+    const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+
+    // Update the display
+    document.getElementById('word-count').textContent = wordCount;
+    document.getElementById('char-count').textContent = charCount;
 }

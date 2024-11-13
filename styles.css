@@ -106,6 +106,8 @@ h1 {
     display: flex;
     gap: 0.25rem;
     align-items: center;
+    justify-content: space-between;
+    width: 100%;
 }
 
 .toolbar-divider {
@@ -361,4 +363,25 @@ textarea:focus {
     .formatting-tools {
         padding-bottom: 0.5rem;
     }
+}
+
+.word-count {
+    margin-left: auto;
+    padding: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.count-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.count-divider {
+    opacity: 0.5;
+    font-size: 0.6rem;
 }
