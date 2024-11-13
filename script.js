@@ -248,9 +248,10 @@ async function convertAndDownload(format) {
                 setLoading(false);
                 return; // PDF has its own download handling
             case 'docx':
-                await convertToDocx(markdown, filename);
+                // Change to ODT
+                await convertToOdt(markdown, filename);
                 setLoading(false);
-                return; // DOCX has its own download handling
+                return;
             case 'txt':
                 content = convertToTxt(markdown);
                 break;
@@ -334,7 +335,7 @@ async function convertToHTML(markdown) {
 </html>`;
 }
 
-// PDF conversion using html2pdf
+// PDF conversion using html2pdf (remains the same)
 async function convertToPDF(markdown, filename) {
     const htmlContent = converter.makeHtml(markdown);
     const container = document.createElement('div');
@@ -382,56 +383,155 @@ async function convertToPDF(markdown, filename) {
     }
 }
 
-// DOCX conversion
-async function convertToDocx(markdown, filename) {
+// New ODT conversion (replacing DOCX)
+async function convertToOdt(markdown, filename) {
     const html = converter.makeHtml(markdown);
+    filename = filename.replace(/\.docx$/, '.odt');
 
-    // Create a document with proper styling
-    const doc = new docx.Document({
-        sections: [{
-            properties: {},
-            children: []
-        }]
+    // Create ZIP file for ODT
+    const zip = new JSZip();
+
+    // Add mimetype file (must be first and uncompressed)
+    zip.file('mimetype', 'application/vnd.oasis.opendocument.text', { compression: "STORE" });
+
+    // Add manifest
+    const manifest = `<?xml version="1.0" encoding="UTF-8"?>
+        <manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.2">
+            <manifest:file-entry manifest:full-path="/" manifest:version="1.2" manifest:media-type="application/vnd.oasis.opendocument.text"/>
+            <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>
+            <manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>
+            <manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>
+        </manifest:manifest>`;
+
+    zip.folder('META-INF').file('manifest.xml', manifest);
+
+    // Add styles
+    const styles = `<?xml version="1.0" encoding="UTF-8"?>
+        <office:document-styles xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+                               xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0"
+                               xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+                               xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0">
+            <office:styles>
+                <style:style style:name="Standard" style:family="paragraph" style:class="text"/>
+                <style:style style:name="Heading" style:family="paragraph" style:parent-style-name="Standard">
+                    <style:text-properties fo:font-weight="bold"/>
+                </style:style>
+                <style:style style:name="Heading_1" style:family="paragraph" style:parent-style-name="Heading">
+                    <style:text-properties fo:font-size="18pt"/>
+                </style:style>
+                <style:style style:name="Heading_2" style:family="paragraph" style:parent-style-name="Heading">
+                    <style:text-properties fo:font-size="16pt"/>
+                </style:style>
+                <style:style style:name="Heading_3" style:family="paragraph" style:parent-style-name="Heading">
+                    <style:text-properties fo:font-size="14pt"/>
+                </style:style>
+                <style:style style:name="Monospace" style:family="text">
+                    <style:text-properties style:font-name="Courier New"/>
+                </style:style>
+                <style:style style:name="Bold" style:family="text">
+                    <style:text-properties fo:font-weight="bold"/>
+                </style:style>
+                <style:style style:name="Italic" style:family="text">
+                    <style:text-properties fo:font-style="italic"/>
+                </style:style>
+            </office:styles>
+        </office:document-styles>`;
+
+    zip.file('styles.xml', styles);
+
+    // Convert HTML to ODT content
+    const content = `<?xml version="1.0" encoding="UTF-8"?>
+        <office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+                               xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+                               xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0">
+            <office:body>
+                <office:text>
+                    ${convertHtmlToOdt(html)}
+                </office:text>
+            </office:body>
+        </office:document-content>`;
+
+    zip.file('content.xml', content);
+
+    // Generate ODT file
+    const blob = await zip.generateAsync({
+        type: "blob",
+        mimeType: "application/vnd.oasis.opendocument.text",
+        compression: "DEFLATE"
     });
 
-    // Parse HTML and convert to DOCX elements
-    const parser = new DOMParser();
-    const htmlDoc = parser.parseFromString(html, 'text/html');
-    const body = htmlDoc.body;
-
-    // Convert HTML elements to DOCX paragraphs
-    const children = [];
-    body.childNodes.forEach(node => {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-            const style = getDocxStyle(node.tagName.toLowerCase());
-            children.push(new docx.Paragraph({
-                text: node.textContent,
-                ...style
-            }));
-        }
-    });
-
-    doc.addSection({
-        children: children
-    });
-
-    // Generate and download
-    const buffer = await docx.Packer.toBuffer(doc);
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    // Download the file
     saveAs(blob, filename);
 }
 
-// Helper function for DOCX styles
-function getDocxStyle(tag) {
-    const styles = {
-        h1: { heading: docx.HeadingLevel.HEADING_1, size: 32 },
-        h2: { heading: docx.HeadingLevel.HEADING_2, size: 26 },
-        h3: { heading: docx.HeadingLevel.HEADING_3, size: 22 },
-        p: { size: 24 },
-        pre: { font: 'Courier New', size: 20 },
-        blockquote: { indent: { left: 720 }, size: 24 }
-    };
-    return styles[tag] || { size: 24 };
+// Helper function to convert HTML to ODT
+function convertHtmlToOdt(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    let odtContent = '';
+
+    function processNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.textContent ?
+                `<text:span>${escapeXml(node.textContent)}</text:span>` : '';
+        }
+
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const content = Array.from(node.childNodes).map(processNode).join('');
+
+            switch (node.tagName.toLowerCase()) {
+                case 'h1':
+                    return `<text:h text:style-name="Heading_1" text:outline-level="1">${content}</text:h>`;
+                case 'h2':
+                    return `<text:h text:style-name="Heading_2" text:outline-level="2">${content}</text:h>`;
+                case 'h3':
+                    return `<text:h text:style-name="Heading_3" text:outline-level="3">${content}</text:h>`;
+                case 'p':
+                    return `<text:p text:style-name="Standard">${content}</text:p>`;
+                case 'strong':
+                case 'b':
+                    return `<text:span text:style-name="Bold">${content}</text:span>`;
+                case 'em':
+                case 'i':
+                    return `<text:span text:style-name="Italic">${content}</text:span>`;
+                case 'ul':
+                    return `<text:list>${Array.from(node.children).map(li =>
+                        `<text:list-item><text:p>${processNode(li)}</text:p></text:list-item>`
+                    ).join('')}</text:list>`;
+                case 'ol':
+                    return `<text:list text:style-name="Numbering">${Array.from(node.children).map(li =>
+                        `<text:list-item><text:p>${processNode(li)}</text:p></text:list-item>`
+                    ).join('')}</text:list>`;
+                case 'li':
+                    return content;
+                case 'blockquote':
+                    return `<text:p text:style-name="Quotation">${content}</text:p>`;
+                case 'code':
+                    return `<text:span text:style-name="Monospace">${escapeXml(node.textContent)}</text:span>`;
+                case 'pre':
+                    return `<text:p text:style-name="Monospace">${escapeXml(node.textContent)}</text:p>`;
+                default:
+                    return content;
+            }
+        }
+        return '';
+    }
+
+    Array.from(doc.body.childNodes).forEach(node => {
+        odtContent += processNode(node);
+    });
+
+    return odtContent;
+}
+
+// Keep the same escapeXml function
+function escapeXml(str) {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
 }
 
 // TXT conversion remains the same
