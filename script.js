@@ -4,10 +4,17 @@ const converter = new showdown.Converter({
     tasklists: true,
     strikethrough: true,
     ghCodeBlocks: true,
-    emoji: true,
-    noHeaderId: true,  // Prevent automatic header IDs
+    noHeaderId: true,
     literalMidWordUnderscores: true,
-    simplifiedAutoLink: true
+    simplifiedAutoLink: true,
+    // Security options
+    parseImgDimensions: true,
+    ghMentions: false,
+    openLinksInNewWindow: true,
+    backslashEscapesHTMLTags: true,
+    disableForced4SpacesIndentedSublists: true,
+    emoji: false,
+    encodeEmails: true
 });
 
 // UI State Management
@@ -94,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     markdownInput.addEventListener('input', debounce((e) => {
         updatePreview(e.target.value);
     }, 300));
-    
+
     // Initialize preview
     updatePreview(markdownInput.value);
 });
@@ -161,8 +168,23 @@ function updatePreview(markdown) {
 
     const output = document.getElementById('output');
     const html = converter.makeHtml(markdown);
-    output.innerHTML = html;
+    // Sanitize the HTML before inserting
+    const sanitizedHtml = DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: [
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'b', 'i', 'strong',
+            'em', 'a', 'pre', 'code', 'img', 'ul', 'ol', 'li', 'blockquote',
+            'table', 'thead', 'tbody', 'tr', 'th', 'td'
+        ],
+        ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class'],
+        ALLOW_DATA_ATTR: false,
+        ADD_ATTR: ['target'],
+        FORBID_TAGS: ['style', 'script', 'input', 'form', 'object', 'embed'],
+        FORBID_ATTR: ['onerror', 'onload', 'onclick']
+    });
+    output.innerHTML = sanitizedHtml;
 }
+
+
 
 // Notification system
 function showNotification(message, type = 'success') {
@@ -195,16 +217,15 @@ function setLoading(isLoading) {
 
 // Sanitize filename
 function sanitizeFilename(text) {
-    // Get first line of markdown as filename
     const firstLine = text.split('\n')[0]
-        .replace(/^#*\s*/, '') // Remove heading markers
-        .substring(0, 30); // Limit length
+        .replace(/^#*\s*/, '')
+        .substring(0, 30);
 
     return firstLine
-        .replace(/[^a-zA-Z0-9-_\s]/g, '') // Remove special characters
+        .replace(/[^a-zA-Z0-9-_\s]/g, '')
         .trim()
-        .replace(/\s+/g, '-') // Replace spaces with hyphens
-        .toLowerCase() || 'document'; // Default if empty
+        .replace(/\s+/g, '-')
+        .toLowerCase() || 'document';
 }
 
 // Get file extension
