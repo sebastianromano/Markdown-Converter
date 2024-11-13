@@ -334,81 +334,108 @@ async function convertToHTML(markdown) {
 </html>`;
 }
 
-// PDF conversion
+// PDF conversion using html2pdf
 async function convertToPDF(markdown, filename) {
-    const html = converter.makeHtml(markdown);
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const htmlContent = converter.makeHtml(markdown);
+    const container = document.createElement('div');
+    container.innerHTML = htmlContent;
+    container.style.width = '800px';
+    container.style.margin = '0 auto';
+    container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    container.style.lineHeight = '1.6';
+    container.style.color = '#1a1a1a';
 
-    // Split content into pages
-    const lines = html.split('\n');
-    let y = 10;
-    const pageHeight = doc.internal.pageSize.height;
+    // Apply styles to container
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+        h1, h2, h3 { margin-top: 1em; }
+        pre { background: #f6f8fa; padding: 1em; border-radius: 4px; }
+        code { font-family: Monaco, Menlo, monospace; }
+        blockquote { border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em; }
+        img { max-width: 100%; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+    `;
+    container.appendChild(styleSheet);
 
-    doc.setFont('helvetica');
-    doc.setFontSize(12);
-
-    for (const line of lines) {
-        // Strip HTML tags for PDF
-        const text = line.replace(/<[^>]*>/g, '').trim();
-        if (!text) continue;
-
-        // Handle page breaks
-        if (y > pageHeight - 20) {
-            doc.addPage();
-            y = 10;
+    const opt = {
+        margin: [10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+            scale: 2,
+            letterRendering: true,
+            useCORS: true
+        },
+        jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait'
         }
+    };
 
-        // Add text with word wrap
-        const splitText = doc.splitTextToSize(text, 180);
-        doc.text(splitText, 10, y);
-        y += (splitText.length * 7);
+    try {
+        await html2pdf().set(opt).from(container).save();
+        showNotification('PDF generated successfully!');
+    } catch (error) {
+        throw new Error('PDF generation failed: ' + error.message);
     }
-
-    doc.save(filename);
 }
 
 // DOCX conversion
 async function convertToDocx(markdown, filename) {
-    const { Document, Paragraph, TextRun } = docx;
     const html = converter.makeHtml(markdown);
 
-    // Convert HTML to paragraphs
-    const lines = html.split('\n').filter(line => line.trim());
-    const paragraphs = lines.map(line => {
-        // Strip HTML tags and convert entities
-        const text = line
-            .replace(/<[^>]*>/g, '')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&amp;/g, '&')
-            .trim();
-
-        return new Paragraph({
-            children: [
-                new TextRun({
-                    text,
-                    size: 24 // 12pt
-                })
-            ]
-        });
-    });
-
-    const doc = new Document({
+    // Create a document with proper styling
+    const doc = new docx.Document({
         sections: [{
             properties: {},
-            children: paragraphs
+            children: []
         }]
     });
 
+    // Parse HTML and convert to DOCX elements
+    const parser = new DOMParser();
+    const htmlDoc = parser.parseFromString(html, 'text/html');
+    const body = htmlDoc.body;
+
+    // Convert HTML elements to DOCX paragraphs
+    const children = [];
+    body.childNodes.forEach(node => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const style = getDocxStyle(node.tagName.toLowerCase());
+            children.push(new docx.Paragraph({
+                text: node.textContent,
+                ...style
+            }));
+        }
+    });
+
+    doc.addSection({
+        children: children
+    });
+
     // Generate and download
-    const blob = await Packer.toBlob(doc);
+    const buffer = await docx.Packer.toBuffer(doc);
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     saveAs(blob, filename);
 }
 
-// TXT conversion
+// Helper function for DOCX styles
+function getDocxStyle(tag) {
+    const styles = {
+        h1: { heading: docx.HeadingLevel.HEADING_1, size: 32 },
+        h2: { heading: docx.HeadingLevel.HEADING_2, size: 26 },
+        h3: { heading: docx.HeadingLevel.HEADING_3, size: 22 },
+        p: { size: 24 },
+        pre: { font: 'Courier New', size: 20 },
+        blockquote: { indent: { left: 720 }, size: 24 }
+    };
+    return styles[tag] || { size: 24 };
+}
+
+// TXT conversion remains the same
 function convertToTxt(markdown) {
-    // Remove Markdown syntax
     return markdown
         .replace(/#{1,6}\s/g, '') // headers
         .replace(/\*\*(.*?)\*\*/g, '$1') // bold
@@ -422,22 +449,59 @@ function convertToTxt(markdown) {
         .trim();
 }
 
-// RTF conversion
+// Improved RTF conversion
 function convertToRTF(markdown) {
-    const html = converter.makeHtml(markdown);
-    let rtf = '{\\rtf1\\ansi\\deff0\n' +
-        '{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}\n' +
-        '\\viewkind4\\uc1\\pard\\f0\\fs24\n';
+    let html = converter.makeHtml(markdown);
+
+    // RTF header
+    let rtf = '{\\rtf1\\ansi\\deff0\\nouicompat\n' +
+        '{\\fonttbl{\\f0\\fswiss\\fcharset0 Helvetica;}{\\f1\\fmodern\\fcharset0 Courier New;}}\n' +
+        '{\\colortbl;\\red0\\green0\\blue0;\\red100\\green100\\blue100;}\n' +
+        '\\viewkind4\\uc1\\pard\\sa200\\sl276\\slmult1\\f0\\fs24\n';
 
     // Convert HTML to RTF
-    rtf += html
-        .replace(/<[^>]*>/g, '') // Remove HTML tags
-        .replace(/\n/g, '\\par\n') // Convert newlines
-        .replace(/[\\{}]/g, '\\$&') // Escape RTF characters
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
 
+    function processNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.textContent
+                .replace(/[\\{}]/g, '\\$&')
+                .replace(/\n/g, '\\par\n');
+        }
+
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            let content = Array.from(node.childNodes).map(processNode).join('');
+
+            switch (node.tagName.toLowerCase()) {
+                case 'h1':
+                    return `\\pard\\sa200\\sl276\\slmult1\\f0\\fs48\\b ${content}\\b0\\fs24\\par\n`;
+                case 'h2':
+                    return `\\pard\\sa200\\sl276\\slmult1\\f0\\fs36\\b ${content}\\b0\\fs24\\par\n`;
+                case 'h3':
+                    return `\\pard\\sa200\\sl276\\slmult1\\f0\\fs32\\b ${content}\\b0\\fs24\\par\n`;
+                case 'p':
+                    return `\\pard\\sa200\\sl276\\slmult1 ${content}\\par\n`;
+                case 'pre':
+                    return `\\pard\\sa200\\sl276\\slmult1\\f1\\fs20 ${content}\\f0\\fs24\\par\n`;
+                case 'code':
+                    return `\\f1 ${content}\\f0 `;
+                case 'strong':
+                case 'b':
+                    return `\\b ${content}\\b0 `;
+                case 'em':
+                case 'i':
+                    return `\\i ${content}\\i0 `;
+                case 'blockquote':
+                    return `\\pard\\sa200\\sl276\\slmult1\\li720 ${content}\\par\n`;
+                default:
+                    return content;
+            }
+        }
+        return '';
+    }
+
+    rtf += processNode(doc.body);
     rtf += '}';
     return rtf;
 }
