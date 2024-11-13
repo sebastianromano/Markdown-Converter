@@ -42,7 +42,12 @@ Here's a demonstration of different text styles:
    2. Sub-step B
 3. Third step
 
-[Click for more examples...]`;
+## Code
+\`\`\`python
+def hello_world():
+    print("Hello, world!")
+\`\`\`
+[Click for more examples...](https://daringfireball.net/projects/markdown/)`;
 
 // Initialize the editor
 document.addEventListener('DOMContentLoaded', () => {
