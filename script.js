@@ -497,6 +497,180 @@ function convertToRTF(markdown) {
     return rtf;
 }
 
+// ODT conversion
+async function convertToOdt(markdown, filename) {
+    const html = converter.makeHtml(markdown);
+    const zip = new JSZip();
+
+    // Add mimetype file (must be first and uncompressed)
+    zip.file('mimetype', 'application/vnd.oasis.opendocument.text', { compression: "STORE" });
+
+    // Add manifest
+    const manifest = `<?xml version="1.0" encoding="UTF-8"?>
+        <manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.2">
+            <manifest:file-entry manifest:full-path="/" manifest:version="1.2" manifest:media-type="application/vnd.oasis.opendocument.text"/>
+            <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>
+            <manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>
+            <manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>
+        </manifest:manifest>`;
+
+    zip.folder('META-INF').file('manifest.xml', manifest);
+
+    // Add styles
+    const styles = `<?xml version="1.0" encoding="UTF-8"?>
+    <office:document-styles xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+                           xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0"
+                           xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+                           xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0">
+        <office:styles>
+            <style:style style:name="Standard" style:family="paragraph" style:class="text">
+                <style:paragraph-properties fo:margin-top="0.247cm" fo:margin-bottom="0.247cm"/>
+            </style:style>
+            <style:style style:name="Heading" style:family="paragraph" style:parent-style-name="Standard">
+                <style:paragraph-properties fo:margin-top="0.423cm" fo:margin-bottom="0.212cm"/>
+                <style:text-properties fo:font-weight="bold"/>
+            </style:style>
+            <style:style style:name="Heading_1" style:family="paragraph" style:parent-style-name="Heading">
+                <style:paragraph-properties fo:margin-top="0.847cm" fo:margin-bottom="0.423cm"/>
+                <style:text-properties fo:font-size="18pt"/>
+            </style:style>
+            <style:style style:name="Heading_2" style:family="paragraph" style:parent-style-name="Heading">
+                <style:paragraph-properties fo:margin-top="0.635cm" fo:margin-bottom="0.318cm"/>
+                <style:text-properties fo:font-size="16pt"/>
+            </style:style>
+            <style:style style:name="Heading_3" style:family="paragraph" style:parent-style-name="Heading">
+                <style:paragraph-properties fo:margin-top="0.423cm" fo:margin-bottom="0.212cm"/>
+                <style:text-properties fo:font-size="14pt"/>
+            </style:style>
+
+            <text:list-style style:name="BulletList">
+                <text:list-level-style-bullet text:level="1" text:style-name="Bullet_20_Symbols" style:num-suffix="." text:bullet-char="•">
+                    <style:list-level-properties text:space-before="0.25in" text:min-label-width="0.25in"/>
+                    <style:text-properties style:font-name="OpenSymbol"/>
+                </text:list-level-style-bullet>
+            </text:list-style>
+
+            <text:list-style style:name="NumberedList">
+                <text:list-level-style-number text:level="1" text:style-name="Numbering_20_Symbols" style:num-suffix="." style:num-format="1">
+                    <style:list-level-properties text:space-before="0.25in" text:min-label-width="0.25in"/>
+                </text:list-level-style-number>
+            </text:list-style>
+
+            <style:style style:name="Source_Text" style:family="text">
+                <style:text-properties style:font-name="Courier New" fo:background-color="#F8F9FA"/>
+            </style:style>
+            <style:style style:name="Preformatted_Text" style:family="paragraph">
+                <style:paragraph-properties fo:margin-left="1cm" fo:margin-right="1cm"/>
+                <style:text-properties style:font-name="Courier New" fo:background-color="#F8F9FA"/>
+            </style:style>
+            <style:style style:name="Bold" style:family="text">
+                <style:text-properties fo:font-weight="bold"/>
+            </style:style>
+            <style:style style:name="Italic" style:family="text">
+                <style:text-properties fo:font-style="italic"/>
+            </style:style>
+        </office:styles>
+    </office:document-styles>`;
+
+    zip.file('styles.xml', styles);
+
+    // Convert HTML to ODT content
+    const content = `<?xml version="1.0" encoding="UTF-8"?>
+        <office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+                               xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+                               xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0">
+            <office:body>
+                <office:text>
+                    ${convertHtmlToOdt(html)}
+                </office:text>
+            </office:body>
+        </office:document-content>`;
+
+    zip.file('content.xml', content);
+
+    // Generate ODT file
+    const blob = await zip.generateAsync({
+        type: "blob",
+        mimeType: "application/vnd.oasis.opendocument.text",
+        compression: "DEFLATE"
+    });
+
+    // Download the file
+    saveAs(blob, filename);
+}
+
+// Helper function to convert HTML to ODT
+function convertHtmlToOdt(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    let odtContent = '';
+
+    function processNode(node, level = 0) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.textContent.trim() ?
+                `<text:span>${escapeXml(node.textContent)}</text:span>` :
+                escapeXml(node.textContent);
+        }
+
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const content = Array.from(node.childNodes)
+                .map(n => processNode(n, level))
+                .join('');
+
+            switch (node.tagName.toLowerCase()) {
+                case 'h1':
+                    return `<text:h text:style-name="Heading_1" text:outline-level="1">${content}</text:h>\n`;
+                case 'h2':
+                    return `<text:h text:style-name="Heading_2" text:outline-level="2">${content}</text:h>\n`;
+                case 'h3':
+                    return `<text:h text:style-name="Heading_3" text:outline-level="3">${content}</text:h>\n`;
+                case 'p':
+                    return `<text:p text:style-name="Standard">${content}</text:p>\n`;
+                case 'strong':
+                case 'b':
+                    return `<text:span text:style-name="Bold">${content}</text:span>`;
+                case 'em':
+                case 'i':
+                    return `<text:span text:style-name="Italic">${content}</text:span>`;
+                case 'ul':
+                    return `<text:list text:style-name="BulletList">
+                        ${Array.from(node.children).map(li => processNode(li)).join('')}
+                    </text:list>\n`;
+                case 'ol':
+                    return `<text:list text:style-name="NumberedList">
+                        ${Array.from(node.children).map(li => processNode(li)).join('')}
+                    </text:list>\n`;
+                case 'li':
+                    return `<text:list-item><text:p>${content}</text:p></text:list-item>`;
+                case 'code':
+                    return `<text:span text:style-name="Source_Text">${escapeXml(node.textContent)}</text:span>`;
+                case 'pre':
+                    return `<text:p text:style-name="Preformatted_Text">${escapeXml(node.textContent)}</text:p>\n`;
+                default:
+                    return content;
+            }
+        }
+        return '';
+    }
+
+    // Process each child node of the body
+    Array.from(doc.body.childNodes).forEach(node => {
+        odtContent += processNode(node);
+    });
+
+    return odtContent;
+}
+
+// Helper function to escape XML special characters
+function escapeXml(str) {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
 // Get MIME type for file download
 function getMimeType(format) {
     const mimeTypes = {
