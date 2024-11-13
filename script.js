@@ -4,17 +4,10 @@ const converter = new showdown.Converter({
     tasklists: true,
     strikethrough: true,
     ghCodeBlocks: true,
+    emoji: true,
     noHeaderId: true,
     literalMidWordUnderscores: true,
-    simplifiedAutoLink: true,
-    // Security options
-    parseImgDimensions: true,
-    ghMentions: false,
-    openLinksInNewWindow: true,
-    backslashEscapesHTMLTags: true,
-    disableForced4SpacesIndentedSublists: true,
-    emoji: false,
-    encodeEmails: true
+    simplifiedAutoLink: true
 });
 
 // UI State Management
@@ -92,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     copyExampleBtn.onclick = () => {
         markdownInput.value = exampleMarkdown;
         updatePreview(exampleMarkdown);
-        updateWordAndCharCount(); // Add this line
+        updateWordAndCharCount();
         showNotification('Example text loaded!');
     };
     toolBar.appendChild(copyExampleBtn);
@@ -214,26 +207,10 @@ function getPlaceholderForMarkdown(prefix) {
 function updatePreview(markdown) {
     if (markdown === lastProcessedMarkdown) return;
     lastProcessedMarkdown = markdown;
-
     const output = document.getElementById('output');
     const html = converter.makeHtml(markdown);
-    // Sanitize the HTML before inserting
-    const sanitizedHtml = DOMPurify.sanitize(html, {
-        ALLOWED_TAGS: [
-            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'b', 'i', 'strong',
-            'em', 'a', 'pre', 'code', 'img', 'ul', 'ol', 'li', 'blockquote',
-            'table', 'thead', 'tbody', 'tr', 'th', 'td'
-        ],
-        ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class'],
-        ALLOW_DATA_ATTR: false,
-        ADD_ATTR: ['target'],
-        FORBID_TAGS: ['style', 'script', 'input', 'form', 'object', 'embed'],
-        FORBID_ATTR: ['onerror', 'onload', 'onclick']
-    });
     output.innerHTML = sanitizedHtml;
 }
-
-
 
 // Notification system
 function showNotification(message, type = 'success') {
