@@ -28,55 +28,17 @@
                 <div class="editor-wrapper">
                     <div class="toolbar">
                         <div class="formatting-tools">
-                            <button class="tool-btn" onclick="insertMarkdown('**')" title="Bold">
-                                <svg viewbox="0 0 24 24" class="icon">
-                                    <path
-                                        d="M13.5,15.5H10V12.5H13.5A1.5,1.5 0 0,1 15,14A1.5,1.5 0 0,1 13.5,15.5M10,6.5H13A1.5,1.5 0 0,1 14.5,8A1.5,1.5 0 0,1 13,9.5H10M15.6,10.79C16.57,10.11 17.25,9 17.25,8C17.25,5.74 15.5,4 13.25,4H7V18H14.04C16.14,18 17.75,16.3 17.75,14.21C17.75,12.69 16.89,11.39 15.6,10.79Z" />
-                                </svg>
-                            </button>
-
-                            <button class="tool-btn" onclick="insertMarkdown('*')" title="Italic">
-                                <svg viewbox="0 0 24 24" class="icon">
-                                    <path d="M10,4V7H12.21L8.79,15H6V18H14V15H11.79L15.21,7H18V4H10Z" />
-                                </svg>
-                            </button>
-
+                            <button class="tool-btn" onclick="insertMarkdown('**')" title="Bold">𝐁</button>
+                            <button class="tool-btn" onclick="insertMarkdown('*')" title="Italic">𝑰</button>
                             <div class="toolbar-divider"></div>
-
-                            <button class="tool-btn" onclick="insertMarkdown('# ')" title="Heading">
-                                <svg viewbox="0 0 24 24" class="icon">
-                                    <path
-                                        d="M3,4H5V10H9V4H11V18H9V12H5V18H3V4M13,8H15.31L15.63,6H17.63L17.31,8H19V10H17.1L16.9,11H19V13H16.71L16.39,15H14.39L14.71,13H13V11H14.9L15.1,10H13V8M15.71,10L15.5,11H16.5L16.71,10H15.71Z" />
-                                </svg>
-                            </button>
-
-                            <button class="tool-btn" onclick="insertMarkdown('- ')" title="List">
-                                <svg viewbox="0 0 24 24" class="icon">
-                                    <path d="M3,4H21V6H3V4M3,11H21V13H3V11M3,18H21V20H3V18Z" />
-                                </svg>
-                            </button>
-
-                            <button class="tool-btn" onclick="insertMarkdown('> ')" title="Quote">
-                                <svg viewbox="0 0 24 24" class="icon">
-                                    <path d="M14,17H17L19,13V7H13V13H16M6,17H9L11,13V7H5V13H8L6,17Z" />
-                                </svg>
-                            </button>
-
+                            <button class="tool-btn" onclick="insertMarkdown('# ')" title="Heading">H</button>
+                            <button class="tool-btn" onclick="insertMarkdown('- ')" title="List">•</button>
+                            <button class="tool-btn" onclick="insertMarkdown('> ')" title="Quote">❝</button>
                             <div class="toolbar-divider"></div>
-
-                            <button class="tool-btn" onclick="insertMarkdown('[', '](https://')" title="Link">
-                                <svg viewbox="0 0 24 24" class="icon">
-                                    <path
-                                        d="M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z" />
-                                </svg>
-                            </button>
-
-                            <button class="tool-btn" onclick="insertMarkdown('```\n', '\n```')" title="Code Block">
-                                <svg viewbox="0 0 24 24" class="icon">
-                                    <path
-                                        d="M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z" />
-                                </svg>
-                            </button>
+                            <button class="tool-btn" onclick="insertMarkdown('[', '](https://')" title="Link">⌲</button>
+                            <button class="tool-btn" onclick="insertMarkdown('```\n', '\n```')" title="Code Block">{ }</button>
+                            <div class="toolbar-divider"></div>
+                            <button class="tool-btn example-btn" onclick="loadExample()" title="Load Example">≡</button>
                         </div>
                         <div class="word-count">
                             <span class="count-item">Words: <span id="word-count">0</span></span>
@@ -90,45 +52,11 @@
                 <div class="export-section">
                     <h3>Export As</h3>
                     <div class="export-buttons">
-                        <button onclick="convertAndDownload('html')">
-                            <svg class="icon" viewbox="0 0 24 24">
-                                <path
-                                    d="M12,17.56L16.07,16.43L16.62,10.33H9.38L9.2,8.3H16.8L17,6.31H7L7.56,12.32H14.45L14.22,14.9L12,15.5L9.78,14.9L9.64,13.24H7.64L7.93,16.43L12,17.56M4.07,3H19.93L18.5,19.2L12,21L5.5,19.2L4.07,3Z" />
-                            </svg>
-                            HTML
-                        </button>
-
-                        <button onclick="convertAndDownload('pdf')">
-                            <svg class="icon" viewbox="0 0 24 24">
-                                <path
-                                    d="M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6C4.89,22 4,21.1 4,20V4C4,2.89 4.89,2 6,2M10.5,11C8,11 6,13 6,15.5C6,18 8,20 10.5,20C13,20 15,18 15,15.5C15,13 13,11 10.5,11Z" />
-                            </svg>
-                            PDF
-                        </button>
-
-                        <button onclick="convertAndDownload('odt')">
-                            <svg class="icon" viewbox="0 0 24 24">
-                                <path
-                                    d="M6,2H14L20,8V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M13,3.5V9H18.5L13,3.5M7,13V15H17V13H7M7,17V19H17V17H7Z" />
-                            </svg>
-                            ODT
-                        </button>
-
-                        <button onclick="convertAndDownload('txt')">
-                            <svg class="icon" viewbox="0 0 24 24">
-                                <path
-                                    d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z" />
-                            </svg>
-                            TXT
-                        </button>
-
-                        <button onclick="convertAndDownload('rtf')">
-                            <svg class="icon" viewbox="0 0 24 24">
-                                <path
-                                    d="M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z" />
-                            </svg>
-                            RTF
-                        </button>
+                        <button onclick="convertAndDownload('html')">HTML</button>
+                        <button onclick="convertAndDownload('pdf')">PDF</button>
+                        <button onclick="convertAndDownload('odt')">ODT</button>
+                        <button onclick="convertAndDownload('txt')">TXT</button>
+                        <button onclick="convertAndDownload('rtf')">RTF</button>
                     </div>
                 </div>
             </div>
