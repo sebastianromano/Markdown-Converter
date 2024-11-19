@@ -49,6 +49,15 @@ def shred_it():
 \`\`\`
 [Click for more gnarly examples...](https://daringfireball.net/projects/markdown/)`;
 
+// Example loader function
+function loadExample() {
+    const markdownInput = document.getElementById('markdown-input');
+    markdownInput.value = exampleMarkdown;
+    updatePreview(exampleMarkdown);
+    updateWordAndCharCount();
+    showNotification('Example text loaded!');
+}
+
 // Initialize the editor
 document.addEventListener('DOMContentLoaded', () => {
     const markdownInput = document.getElementById('markdown-input');
@@ -74,27 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize counts
     updateWordAndCharCount();
 
-    // Add button to copy example text
-    const exampleBtn = document.createElement('div');
-    exampleBtn.className = 'toolbar-divider';
-    toolBar.appendChild(exampleBtn);
-
-    const copyExampleBtn = document.createElement('button');
-    copyExampleBtn.innerHTML = `
-    <svg class="icon" viewBox="0 0 24 24">
-        <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"/>
-    </svg>
-`;
-    copyExampleBtn.className = 'tool-btn';
-    copyExampleBtn.title = 'Load Example';
-    copyExampleBtn.onclick = () => {
-        markdownInput.value = exampleMarkdown;
-        updatePreview(exampleMarkdown);
-        updateWordAndCharCount();
-        showNotification('Example text loaded!');
-    };
-    toolBar.appendChild(copyExampleBtn);
-
     // Add input listener for live preview
     markdownInput.addEventListener('input', debounce((e) => {
         updatePreview(e.target.value);
@@ -104,53 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize preview
     updatePreview(markdownInput.value);
 
-    // Get all the formatting buttons by their SVG paths
+    // Get all the formatting buttons
     const formatButtons = document.querySelectorAll('.formatting-tools button');
 
-    // Map each button to its formatting function based on the SVG path
+    // Map each button to its formatting function based on its text content
     formatButtons.forEach(button => {
-        const path = button.querySelector('path');
-        if (!path) return;
-
-        const d = path.getAttribute('d');
-
-        // Match the SVG path to determine which formatting to apply
-        switch (d) {
-            // Bold
-            case 'M13.5,15.5H10V12.5H13.5A1.5,1.5 0 0,1 15,14A1.5,1.5 0 0,1 13.5,15.5M10,6.5H13A1.5,1.5 0 0,1 14.5,8A1.5,1.5 0 0,1 13,9.5H10M15.6,10.79C16.57,10.11 17.25,9 17.25,8C17.25,5.74 15.5,4 13.25,4H7V18H14.04C16.14,18 17.75,16.3 17.75,14.21C17.75,12.69 16.89,11.39 15.6,10.79Z':
-                button.addEventListener('click', () => insertMarkdown('**', '**'));
-                break;
-
-            // Italic
-            case 'M10,4V7H12.21L8.79,15H6V18H14V15H11.79L15.21,7H18V4H10Z':
-                button.addEventListener('click', () => insertMarkdown('*', '*'));
-                break;
-
-            // Heading
-            case 'M3,4H5V10H9V4H11V18H9V12H5V18H3V4M13,8H15.31L15.63,6H17.63L17.31,8H19V10H17.1L16.9,11H19V13H16.71L16.39,15H14.39L14.71,13H13V11H14.9L15.1,10H13V8M15.71,10L15.5,11H16.5L16.71,10H15.71Z':
-                button.addEventListener('click', () => insertMarkdown('# ', ''));
-                break;
-
-            // Unordered list
-            case 'M3,4H21V6H3V4M3,11H21V13H3V11M3,18H21V20H3V18Z':
-                button.addEventListener('click', () => insertMarkdown('- ', ''));
-                break;
-
-            // Quote
-            case 'M14,17H17L19,13V7H13V13H16M6,17H9L11,13V7H5V13H8L6,17Z':
-                button.addEventListener('click', () => insertMarkdown('> ', ''));
-                break;
-
-            // Link
-            case 'M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z':
-                button.addEventListener('click', () => insertMarkdown('[', '](url)'));
-                break;
-
-            // Code
-            case 'M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z':
-                button.addEventListener('click', () => insertMarkdown('```\n', '\n```'));
-                break;
-        }
+        const symbol = button.textContent.trim();
     });
 });
 
